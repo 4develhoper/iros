@@ -1,26 +1,154 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+/**
+ * Thème sombre piloté par la classe posée sur `<html>` par next-themes.
+ *
+ * Sans cette déclaration, la variante `dark:` de Tailwind 4 suivrait la
+ * préférence système et ignorerait le choix explicite de l'utilisateur.
+ */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/**
+ * Jetons de design de l'application — valeurs du thème clair.
+ *
+ * Les couleurs sont déclarées dans `@theme` : Tailwind génère alors
+ * automatiquement les utilitaires correspondants (`bg-primary`,
+ * `text-vanilla-500`, `border-border`, ...).
+ */
+@theme {
+  /* Police unique du projet : Poppins 400. */
+  --font-sans: var(--font-poppins), ui-sans-serif, system-ui, sans-serif;
+
+  /* Steam blue — couleur de marque. */
+  --color-primary-50: #eef3fd;
+  --color-primary-100: #d8e3fa;
+  --color-primary-200: #b3c8f5;
+  --color-primary-300: #85a6ee;
+  --color-primary-400: #4f7ee2;
+  --color-primary-500: #1e56cd;
+  --color-primary-600: #1a4bb5;
+  --color-primary-700: #163e95;
+  --color-primary-800: #123176;
+  --color-primary-900: #0e2559;
+  --color-primary: var(--color-primary-500);
+
+  /* Vanilla — fond chaud des surfaces secondaires. */
+  --color-vanilla-50: #fffdfa;
+  --color-vanilla-100: #fdf8f2;
+  --color-vanilla-200: #f7eddf;
+  --color-vanilla-300: #efdfc9;
+  --color-vanilla-400: #e2caa8;
+  --color-vanilla-500: #d1b088;
+  --color-vanilla: var(--color-vanilla-100);
+
+  /* Gris neutres, du plus clair au plus foncé. */
+  --color-ink-50: #f7f8fa;
+  --color-ink-100: #eef0f4;
+  --color-ink-200: #dfe3ea;
+  --color-ink-300: #c3cad6;
+  --color-ink-400: #8d97a8;
+  --color-ink-500: #667085;
+  --color-ink-600: #4a5365;
+  --color-ink-700: #343c4b;
+  --color-ink-800: #1f2532;
+  --color-ink-900: #101420;
+
+  /* Couleurs sémantiques. */
+  --color-background: #ffffff;
+  --color-surface: var(--color-vanilla-100);
+  --color-foreground: var(--color-ink-900);
+  --color-muted: var(--color-ink-500);
+  --color-border: var(--color-ink-200);
+  --color-success: #0f9d58;
+  --color-warning: #d98b0a;
+  --color-danger: #d92d20;
+
+  /* Rayons — cohérents avec les maquettes d'authentification. */
+  --radius-card: 1rem;
+  --radius-field: 0.625rem;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+/**
+ * Thème sombre.
+ *
+ * L'échelle `ink` est **inversée** : `ink-50` devient la surface la plus
+ * sombre et `ink-900` le texte le plus clair. Les composants continuent donc
+ * d'utiliser `text-ink-700` ou `bg-ink-50` sans aucune variante `dark:` — la
+ * hiérarchie visuelle est conservée, seule la polarité change.
+ *
+ * Les surfaces `vanilla`, chaudes en clair, deviennent des gris froids : une
+ * teinte crème sur fond sombre paraîtrait sale.
+ */
+.dark {
+  --color-vanilla-50: #131822;
+  --color-vanilla-100: #171d28;
+  --color-vanilla-200: #1e2532;
+  --color-vanilla-300: #27303f;
+  --color-vanilla-400: #333e50;
+  --color-vanilla-500: #465264;
+  --color-vanilla: var(--color-vanilla-100);
+
+  --color-ink-50: #161c26;
+  --color-ink-100: #1e2531;
+  --color-ink-200: #2a3341;
+  --color-ink-300: #3b4657;
+  --color-ink-400: #6b7688;
+  --color-ink-500: #94a0b4;
+  --color-ink-600: #b3bccc;
+  --color-ink-700: #ccd4e0;
+  --color-ink-800: #e2e7ee;
+  --color-ink-900: #f2f5f9;
+
+  --color-background: #0b0f16;
+  --color-surface: var(--color-vanilla-100);
+  --color-foreground: var(--color-ink-900);
+  --color-muted: var(--color-ink-500);
+  --color-border: var(--color-ink-200);
+
+  /* Les couleurs d'état sont éclaircies pour rester lisibles sur fond sombre. */
+  --color-success: #3ddc97;
+  --color-warning: #f0b429;
+  --color-danger: #ff6b60;
+
+  /* Le bleu de marque est légèrement éclairci : le #1E56CD manque de contraste
+     sur un fond sombre. */
+  --color-primary: var(--color-primary-400);
+  --color-primary-50: #16223c;
+  --color-primary-100: #1b2d52;
+  --color-primary-700: #a9c2f5;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+@layer base {
+  * {
+    border-color: var(--color-border);
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+    /* Indique au navigateur de rendre ses propres UI (barres de défilement,
+       champs natifs) dans la bonne polarité. */
+    color-scheme: light;
+  }
+
+  html.dark {
+    color-scheme: dark;
+  }
+
+  body {
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    font-family: var(--font-sans);
+    font-weight: 400;
+  }
+
+  /* Anneau de focus homogène sur tous les éléments interactifs. */
+  :focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+@utility scrollbar-thin {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-ink-300) transparent;
 }
