@@ -46,13 +46,26 @@ La suite décrit la **stratégie A**. Le § 8 donne le delta pour la stratégie 
 
 ### Préparer ce dépôt comme template
 
-1. Pousser le boilerplate sur GitHub, par exemple `votre-org/iros`.
-2. Marquer une version : `git tag v1.0.0 && git push --tags`. La CLI pourra
-   cibler `#v1.0.0` plutôt que `#main`, et les utilisateurs cesseront de subir
-   les commits en cours.
-3. Vérifier `.gitignore` : `.env*`, `/data`, `/node_modules`, `/.next` en sont
-   exclus, donc absents de l'archive téléchargée. C'est exactement ce qu'on
-   veut — la CLI reconstruit ces éléments.
+1. Pousser le boilerplate sur GitHub — ici `4develhoper/iros`.
+2. Marquer une version : `git tag v1.0.2 && git push --follow-tags`. La CLI
+   cible `#v1.0.2` plutôt que `#main`, et les utilisateurs cessent ainsi de
+   subir les commits en cours.
+3. Vérifier `.gitignore` : `/data`, `/node_modules`, `/.next` et les `.env` en
+   sont exclus, donc absents de l'archive téléchargée. C'est exactement ce
+   qu'on veut — la CLI reconstruit ces éléments.
+
+   **Sauf `.env.example`**, qui doit rester versionné : la CLI en dérive le
+   `.env` du projet généré. Le motif `.env*` de `create-next-app` l'emporte
+   avec lui, d'où la ré-inclusion explicite :
+
+   ```gitignore
+   .env*
+   !.env.example
+   ```
+
+   Contrôle : `git ls-tree -r --name-only HEAD | grep env` doit retourner
+   `.env.example`. Sinon, `create-iros-app` échoue sur
+   `ENOENT: .env.example`.
 4. Optionnel : cocher « Template repository » dans les réglages GitHub, pour
    permettre aussi le clonage manuel.
 
@@ -83,7 +96,7 @@ create-iros-app/
   "files": ["index.mjs", "README.md"],
   "engines": { "node": ">=20" },
   "keywords": ["iros", "nextjs", "boilerplate", "starter"],
-  "repository": { "type": "git", "url": "git+https://github.com/votre-org/create-iros-app.git" },
+  "repository": { "type": "git", "url": "git+https://github.com/4develhoper/create-iros-app.git" },
   "dependencies": {
     "giget": "^2.0.0",
     "picocolors": "^1.1.1",
@@ -113,7 +126,7 @@ import pc from "picocolors";
 import prompts from "prompts";
 
 /** Source du template. Épingler un tag évite de livrer un `main` instable. */
-const TEMPLATE = process.env.IROS_TEMPLATE ?? "github:votre-org/iros#v1.0.0";
+const TEMPLATE = process.env.IROS_TEMPLATE ?? "github:4develhoper/iros#v1.0.2";
 
 /** Port de développement par défaut du boilerplate. */
 const PORT = 3017;
@@ -296,7 +309,7 @@ La variable `IROS_TEMPLATE` permet d'essayer une autre source sans toucher au
 code — une branche de travail, un autre dépôt, ou une archive :
 
 ```bash
-IROS_TEMPLATE=github:votre-org/iros#ma-branche node index.mjs /tmp/essai-iros
+IROS_TEMPLATE=github:4develhoper/iros#ma-branche node index.mjs /tmp/essai-iros
 IROS_TEMPLATE=https://exemple.com/iros.tar.gz  node index.mjs /tmp/essai-iros
 ```
 
@@ -319,8 +332,8 @@ npm publish --access public
 `npm view create-iros-app` — une erreur 404 signifie qu'il est disponible. S'il
 est pris, deux issues :
 
-- **Nom scopé** : `@votre-org/create-iros-app`, invoqué par
-  `npm create @votre-org/iros-app`. Un scope exige `--access public` à la
+- **Nom scopé** : `@4develhoper/create-iros-app`, invoqué par
+  `npm create @4develhoper/iros-app`. Un scope exige `--access public` à la
   première publication, sinon npm le suppose privé (payant).
 - **Autre nom** : `create-iros`, `create-iros-next`…
 
@@ -347,7 +360,7 @@ Le nom doit être scopé sur l'organisation propriétaire du dépôt :
 
 ```json
 {
-  "name": "@votre-org/create-iros-app",
+  "name": "@4develhoper/create-iros-app",
   "publishConfig": { "registry": "https://npm.pkg.github.com" }
 }
 ```
@@ -361,7 +374,7 @@ Côté consommateur, un `~/.npmrc` est obligatoire — GitHub Packages n'autoris
 aucune lecture anonyme :
 
 ```ini
-@votre-org:registry=https://npm.pkg.github.com
+@4develhoper:registry=https://npm.pkg.github.com
 //npm.pkg.github.com/:_authToken=${GITHUB_TOKEN}
 ```
 
@@ -387,11 +400,11 @@ Si vous êtes le seul utilisateur, la CLI n'est pas indispensable :
 
 ```bash
 # Copie du template, sans historique Git
-bunx giget@latest github:votre-org/iros mon-app
-npx tiged votre-org/iros mon-app
+bunx giget@latest github:4develhoper/iros mon-app
+npx tiged 4develhoper/iros mon-app
 
 # Exécution de la CLI directement depuis son dépôt
-npx github:votre-org/create-iros-app mon-app
+npx github:4develhoper/create-iros-app mon-app
 ```
 
 Mais `bun create iros-app`, lui, exige bien une publication sur un registre.
@@ -432,8 +445,8 @@ synchronisation.
 ## 9. Aller plus loin
 
 - **Plusieurs templates** — `--template minimal|full` mappé sur des branches
-  (`github:votre-org/iros#minimal`) ou des sous-dossiers
-  (`github:votre-org/iros/templates/minimal`), tous deux gérés par `giget`.
+  (`github:4develhoper/iros#minimal`) ou des sous-dossiers
+  (`github:4develhoper/iros/templates/minimal`), tous deux gérés par `giget`.
 - **Options interactives** — proposer d'inclure ou non la feature `starter`,
   les fournisseurs OAuth, le thème sombre ; supprimer les dossiers
   correspondants après la copie.
@@ -450,7 +463,7 @@ synchronisation.
 
 | Étape                                                | Commande                                     |
 | ---------------------------------------------------- | -------------------------------------------- |
-| 1. Pousser le boilerplate et le taguer                | `git tag v1.0.0 && git push --follow-tags`   |
+| 1. Pousser le boilerplate et le taguer                | `git tag v1.0.2 && git push --follow-tags`   |
 | 2. Créer le dépôt de la CLI                           | `package.json` + `index.mjs` du § 3          |
 | 3. Tester en local                                    | `node index.mjs /tmp/essai`                  |
 | 4. Vérifier la disponibilité du nom                   | `npm view create-iros-app`                   |

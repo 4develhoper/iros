@@ -32,6 +32,9 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+# Contrat des variables d'environnement : versionné, sans valeur secrète.
+# Indispensable au template — `create-iros-app` en dérive le `.env` du projet.
+!.env.example
 
 # vercel
 .vercel
