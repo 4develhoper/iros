@@ -5,6 +5,9 @@ Base de départ pour créer rapidement de nouveaux projets Next.js, organisée e
 
 ## Documentation
 
+- **`/docs`** — la même prise en main, consultable dans l'application
+  (`src/features/docs/`), avec sommaire, blocs de code copiables et thème
+  clair/sombre.
 - [Installation & prise en main](docs/installation.md) — prérequis, variables
   d'environnement, base de données, déploiement, dépannage.
 - [Publier `create-iros-app`](docs/create-iros-app.md) — transformer ce dépôt en
@@ -28,17 +31,21 @@ Base de départ pour créer rapidement de nouveaux projets Next.js, organisée e
 
 ## Démarrage
 
+Le boilerplate ne se clone pas : `create-iros-app` le télécharge, le
+personnalise (nom, `.env`, secret d'authentification) et l'installe.
+
 ```bash
-bun install
-cp .env.example .env          # puis renseigner BETTER_AUTH_SECRET
-mkdir -p data                 # `data/` est ignoré par Git : à recréer après un clone
-bun run db:migrate            # crée ./data/app.db
+bun  create iros-app mon-projet   # ou : npm create iros-app@latest mon-projet
+cd mon-projet
 bun run dev
 ```
 
-L'application est disponible sur http://localhost:3017.
+La CLI a déjà installé les dépendances, écrit le `.env`, créé `data/` et
+appliqué les migrations. L'application est disponible sur
+http://localhost:3017.
 
-Détail de chaque étape : [docs/installation.md](docs/installation.md).
+Détail de chaque étape, options de la CLI et installation manuelle (maintenance
+du boilerplate) : [docs/installation.md](docs/installation.md).
 
 ## Scripts
 

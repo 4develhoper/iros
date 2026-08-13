@@ -8,6 +8,7 @@ export const routes = {
   /** Routes accessibles sans session. */
   public: {
     landing: "/",
+    docs: "/docs",
   },
   /** Routes du tunnel d'authentification. */
   auth: {

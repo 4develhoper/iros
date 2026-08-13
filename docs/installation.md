@@ -10,8 +10,8 @@ projet. Pour la structure du code et les conventions, voir le [README](../README
 | Outil    | Version    | Vérification      | Note                                                     |
 | -------- | ---------- | ----------------- | -------------------------------------------------------- |
 | Bun      | ≥ 1.3.14   | `bun --version`   | Gestionnaire de paquets et runtime des scripts            |
-| Node.js  | ≥ 20       | `node --version`  | Requis par Next.js 16 et par la compilation de `better-sqlite3` |
-| Git      | quelconque | `git --version`   | Récupération du dépôt                                     |
+| Node.js  | ≥ 20       | `node --version`  | Requis par Next.js 16, par `create-iros-app` et par la compilation de `better-sqlite3` |
+| Git      | quelconque | `git --version`   | Facultatif : sert au premier commit créé par `create-iros-app` |
 
 `package.json` épingle `packageManager: "bun@1.3.14"` : utiliser `bun`, pas
 `npm` ni `pnpm`, sous peine d'un arbre de dépendances différent.
@@ -27,19 +27,63 @@ tout, installer les **Visual Studio Build Tools** avec la charge de travail
 
 ## 2. Installation
 
+Le projet ne se clone pas : il se génère avec **`create-iros-app`**, qui
+télécharge le boilerplate, le personnalise et l'installe.
+
 ```bash
-git clone <url-du-depot> mon-projet
+bun  create iros-app mon-projet
+npm  create iros-app@latest mon-projet
+pnpm create iros-app mon-projet
+```
+
+La CLI demande le nom du projet (si absent de la ligne de commande), le nom
+affiché dans l'application et une description, puis :
+
+1. télécharge le template depuis GitHub, **sans historique Git** ;
+2. écrit `name` et `version` dans `package.json` ;
+3. renseigne `name`, `shortName` et `description` dans
+   `src/config/site.config.ts` ;
+4. crée le `.env` depuis `.env.example`, avec un `BETTER_AUTH_SECRET` généré
+   aléatoirement et les URL alignées sur le port `3017` ;
+5. crée le dossier `data/` ;
+6. installe les dépendances puis applique les migrations (`db:migrate`) ;
+7. initialise un dépôt Git et son premier commit.
+
+| Option         | Effet                                                          |
+| -------------- | -------------------------------------------------------------- |
+| `--yes` / `-y` | Aucune question ; seul mode utilisable hors terminal interactif |
+| `--pm <nom>`   | Force le gestionnaire de paquets (`bun`, `npm`, `pnpm`, `yarn`) |
+| `--no-install` | Ne pose que les fichiers : à vous de lancer install + migrations |
+| `--no-git`     | Pas de dépôt ni de commit initial                               |
+
+Le gestionnaire détecté par défaut est celui qui a lancé la commande. Comme
+`package.json` épingle `packageManager: "bun@1.3.14"`, préférer
+`bun create iros-app` — les §§ suivants supposent `bun`.
+
+À la fin :
+
+```bash
 cd mon-projet
-bun install
+bun run dev
 ```
 
 `better-sqlite3` figure dans `trustedDependencies` : son script
 d'installation est autorisé à s'exécuter, contrairement à `sharp` et
 `unrs-resolver` qui sont ignorés volontairement (`ignoreScripts`).
 
+> Cloner ce dépôt reste possible, mais ne concerne que la **maintenance du
+> boilerplate lui-même** : il faut alors dérouler à la main les §§ 3 et 4
+> (`bun install`, `.env`, `data/`, migrations), que `create-iros-app` prend
+> normalement en charge. Voir aussi
+> [Publier `create-iros-app`](create-iros-app.md).
+
 ---
 
 ## 3. Variables d'environnement
+
+`create-iros-app` a déjà écrit un `.env` complet : cette section sert de
+référence, et de mode opératoire après un clone manuel ou un
+`--no-install`.
 
 ```bash
 cp .env.example .env
@@ -73,9 +117,13 @@ fonctionner normalement.
 
 ## 4. Base de données
 
-Le dossier `data/` est ignoré par Git et **n'existe pas après un clone**.
-`better-sqlite3` ne crée pas les dossiers manquants : le créer avant la première
-migration.
+Là encore, `create-iros-app` a créé `data/` et appliqué les migrations : la base
+est prête. Ce qui suit vaut pour un clone manuel, un `--no-install`, ou une
+remise à zéro.
+
+Le dossier `data/` est ignoré par Git et **n'existe donc dans aucune copie du
+dépôt**. `better-sqlite3` ne crée pas les dossiers manquants : le créer avant la
+première migration.
 
 ```bash
 mkdir -p data          # PowerShell : New-Item -ItemType Directory -Force data
@@ -140,12 +188,14 @@ une base contenant des données à conserver.
 
 ## 7. Personnaliser le projet
 
-Dans l'ordre, après le clone :
+`create-iros-app` a déjà posé le nom du paquet, le nom affiché et la
+description. Restent, dans l'ordre :
 
-1. **`package.json`** — `name`, `version`, et le port dans `dev` / `start`.
-2. **`src/config/site.config.ts`** — `name`, `shortName`, `description`,
-   `author`, `copyrightYear`. Ces valeurs alimentent le logo, les métadonnées
-   SEO et le pied de page.
+1. **`package.json`** — le port dans `dev` / `start`, si `3017` ne convient pas
+   (penser aux URL de `.env`).
+2. **`src/config/site.config.ts`** — `author` et `copyrightYear` ; `name`,
+   `shortName` et `description` sont déjà renseignés. Ces valeurs alimentent le
+   logo, les métadonnées SEO et le pied de page.
 3. **`src/app/globals.css`**, bloc `@theme` — couleurs (steam blue `#1E56CD`,
    vanilla `#FDF8F2`) et police (Poppins).
 4. **`src/config/routes.config.ts`** — routes de l'application ; `typedRoutes`

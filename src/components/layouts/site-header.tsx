@@ -12,6 +12,7 @@ import {
 const NAVIGATION_LINKS = [
   { label: "Fonctionnalités", href: "#features" },
   { label: "Stack", href: "#stack" },
+  { label: "Documentation", href: routes.public.docs },
   { label: "Démarrer", href: routes.app.starter },
 ] as const;
 
