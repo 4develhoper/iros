@@ -17,6 +17,11 @@ const globalForDatabase = globalThis as unknown as {
 const createConnection = (): Database.Database => {
   const connection = new Database(process.env.DATABASE_URL ?? "./data/app.db");
 
+  // Attendre le verrou plutôt qu'échouer aussitôt. `next build` collecte les
+  // pages dans plusieurs workers : sur une base fraîchement migrée, encore en
+  // mode `delete`, ils demandent tous le verrou exclusif que réclame le
+  // passage en WAL, et tous sauf un partiraient en `SQLITE_BUSY`.
+  connection.pragma("busy_timeout = 5000");
   // WAL : lectures concurrentes pendant les écritures.
   connection.pragma("journal_mode = WAL");
   // Indispensable en SQLite : les clés étrangères sont désactivées par défaut.

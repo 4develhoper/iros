@@ -235,6 +235,8 @@ Ces trois commandes doivent passer avant tout commit.
 | ---------------------------------------------------- | --------------------------------------------------------------------------------- |
 | `SQLITE_CANTOPEN: unable to open database file`       | Le dossier `data/` n'existe pas → `mkdir -p data`                                  |
 | `no such table: user`                                 | Migrations non appliquées → `bun run db:migrate`                                   |
+| `SqliteError: database is locked` pendant `build`     | Un autre processus tient la base — arrêter `db:studio` ou un `dev` resté ouvert. Le `busy_timeout` de `lib/drizzle/index.ts` absorbe déjà la concurrence des workers de build |
+| `Cannot find name 'LayoutProps'` au typecheck         | Types de routes non générés. `bun run typecheck` appelle `next typegen` avant `tsc` ; l'erreur signale un script `typecheck` modifié |
 | Déconnexion à chaque redémarrage                      | `BETTER_AUTH_SECRET` absent ou modifié entre deux lancements                        |
 | Boucle entre `/login` et une page protégée            | Une redirection manuelle vers `/login` a court-circuité `requireUser()` — toujours appeler `requireUser()` |
 | `Route "/x" used cookies inside a component…`         | `cacheComponents` : isoler la lecture dynamique derrière un `<Suspense fallback>`   |
