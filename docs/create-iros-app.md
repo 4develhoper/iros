@@ -47,8 +47,8 @@ La suite décrit la **stratégie A**. Le § 8 donne le delta pour la stratégie 
 ### Préparer ce dépôt comme template
 
 1. Pousser le boilerplate sur GitHub — ici `4develhoper/iros`.
-2. Marquer une version : `git tag v1.0.2 && git push --follow-tags`. La CLI
-   cible `#v1.0.2` plutôt que `#main`, et les utilisateurs cessent ainsi de
+2. Marquer une version : `git tag v1.0.3 && git push --follow-tags`. La CLI
+   cible `#v1.0.3` plutôt que `#main`, et les utilisateurs cessent ainsi de
    subir les commits en cours.
 3. Vérifier `.gitignore` : `/data`, `/node_modules`, `/.next` et les `.env` en
    sont exclus, donc absents de l'archive téléchargée. C'est exactement ce
@@ -126,10 +126,13 @@ import pc from "picocolors";
 import prompts from "prompts";
 
 /** Source du template. Épingler un tag évite de livrer un `main` instable. */
-const TEMPLATE = process.env.IROS_TEMPLATE ?? "github:4develhoper/iros#v1.0.2";
+const TEMPLATE = process.env.IROS_TEMPLATE ?? "github:4develhoper/iros#v1.0.3";
 
 /** Port de développement par défaut du boilerplate. */
 const PORT = 3017;
+
+/** Dossier retenu lorsque la ligne de commande n'en nomme aucun. */
+const DEFAULT_DIR = "mon-app";
 
 /**
  * Analyse minimale de la ligne de commande.
@@ -137,20 +140,60 @@ const PORT = 3017;
  * @example
  * ```bash
  * create-iros-app mon-app --pm bun --no-git
+ * create-iros-app mon-app --yes          # sans aucune question
  * ```
  */
 const parseArgv = (argv) => {
-  const options = { dir: undefined, install: true, git: true, pm: undefined };
+  const options = { dir: undefined, install: true, git: true, pm: undefined, yes: false };
 
   for (let index = 0; index < argv.length; index += 1) {
     const argument = argv[index];
     if (argument === "--no-install") options.install = false;
     else if (argument === "--no-git") options.git = false;
+    else if (argument === "--yes" || argument === "-y") options.yes = true;
     else if (argument === "--pm") options.pm = argv[++index];
     else if (!argument.startsWith("-")) options.dir ??= argument;
   }
 
   return options;
+};
+
+/** Déduit un nom affiché lisible depuis un nom de dossier. */
+const toDisplayName = (raw) =>
+  basename(raw)
+    .replace(/[-_]/g, " ")
+    .replace(/\b\w/g, (character) => character.toUpperCase());
+
+/**
+ * Réunit les métadonnées du projet, en interrogeant l'utilisateur si besoin.
+ *
+ * `--yes` court-circuite les questions : c'est le seul mode utilisable sans
+ * terminal interactif, `prompts` s'interrompant sur une entrée redirigée.
+ */
+const collectAnswers = async (options) => {
+  if (options.yes) {
+    const dir = options.dir ?? DEFAULT_DIR;
+    return { dir, displayName: toDisplayName(dir), description: "" };
+  }
+
+  return prompts(
+    [
+      {
+        type: options.dir ? null : "text",
+        name: "dir",
+        message: "Nom du projet",
+        initial: DEFAULT_DIR,
+      },
+      {
+        type: "text",
+        name: "displayName",
+        message: "Nom affiché dans l'application",
+        initial: (_, values) => toDisplayName(options.dir ?? values.dir ?? DEFAULT_DIR),
+      },
+      { type: "text", name: "description", message: "Description", initial: "" },
+    ],
+    { onCancel: () => process.exit(1) },
+  );
 };
 
 /** Devine le gestionnaire de paquets depuis `npm_config_user_agent`. */
@@ -162,9 +205,18 @@ const detectPackageManager = () => {
   return "npm";
 };
 
-/** Exécute une commande dans le projet et interrompt le script en cas d'échec. */
+/**
+ * Exécute une commande dans le projet et interrompt le script en cas d'échec.
+ *
+ * Sous Windows, les gestionnaires de paquets sont des scripts `.cmd` que
+ * `spawnSync` ne sait lancer qu'à travers un shell. `git`, lui, est un
+ * exécutable natif : le passer par le shell casserait ses arguments, car
+ * `shell: true` concatène `args` sans échappement — un message de commit
+ * multi-mots serait alors découpé en autant de pathspecs.
+ */
 const run = (command, args, cwd) => {
-  const result = spawnSync(command, args, { cwd, stdio: "inherit", shell: process.platform === "win32" });
+  const shell = process.platform === "win32" && command !== "git";
+  const result = spawnSync(command, args, { cwd, stdio: "inherit", shell });
   if (result.status !== 0) throw new Error(`${command} ${args.join(" ")} a échoué.`);
 };
 
@@ -178,27 +230,7 @@ const replaceInFile = (path, replacements) => {
 const main = async () => {
   const options = parseArgv(process.argv.slice(2));
 
-  const answers = await prompts(
-    [
-      {
-        type: options.dir ? null : "text",
-        name: "dir",
-        message: "Nom du projet",
-        initial: "mon-app",
-      },
-      {
-        type: "text",
-        name: "displayName",
-        message: "Nom affiché dans l'application",
-        initial: (_, values) => {
-          const raw = options.dir ?? values.dir ?? "mon-app";
-          return basename(raw).replace(/[-_]/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
-        },
-      },
-      { type: "text", name: "description", message: "Description", initial: "" },
-    ],
-    { onCancel: () => process.exit(1) },
-  );
+  const answers = await collectAnswers(options);
 
   const directory = options.dir ?? answers.dir;
   const target = resolve(process.cwd(), directory);
@@ -251,10 +283,16 @@ const main = async () => {
     run(packageManager, ["run", "db:migrate"], target);
   }
 
+  // Le dépôt Git est un confort, pas une condition de réussite : une identité
+  // Git absente ne doit pas condamner un projet par ailleurs opérationnel.
   if (options.git && !existsSync(join(target, ".git"))) {
-    run("git", ["init"], target);
-    run("git", ["add", "-A"], target);
-    run("git", ["commit", "-m", "chore: initialisation depuis create-iros-app"], target);
+    try {
+      run("git", ["init"], target);
+      run("git", ["add", "-A"], target);
+      run("git", ["commit", "-m", "chore: initialisation depuis create-iros-app"], target);
+    } catch {
+      console.warn(pc.yellow("\nDépôt Git non initialisé — à faire à la main si besoin."));
+    }
   }
 
   const runner = packageManager === "npm" ? "npm run" : packageManager === "yarn" ? "yarn" : `${packageManager} run`;
@@ -463,7 +501,7 @@ synchronisation.
 
 | Étape                                                | Commande                                     |
 | ---------------------------------------------------- | -------------------------------------------- |
-| 1. Pousser le boilerplate et le taguer                | `git tag v1.0.2 && git push --follow-tags`   |
+| 1. Pousser le boilerplate et le taguer                | `git tag v1.0.3 && git push --follow-tags`   |
 | 2. Créer le dépôt de la CLI                           | `package.json` + `index.mjs` du § 3          |
 | 3. Tester en local                                    | `node index.mjs /tmp/essai`                  |
 | 4. Vérifier la disponibilité du nom                   | `npm view create-iros-app`                   |
